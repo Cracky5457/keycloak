@@ -49,9 +49,12 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response.Status;
@@ -668,6 +671,44 @@ public class GroupTest extends AbstractGroupTest {
             assertEquals(110, group.members(-1, -2).size());
         }
     }
+    
+    @Test
+    public void getGroupsWithFullRepresentation() {
+        RealmResource realm = adminClient.realms().realm("test");
+        GroupsResource groupsResource = adminClient.realms().realm("test").groups();
+        
+        GroupRepresentation group = new GroupRepresentation();
+        group.setName("groupWithAttribute");
+        
+        Map<String, List<String>> attributes = new HashMap<String, List<String>>();
+        attributes.put("attribute1", Arrays.asList("attribute1","attribute2"));
+		group.setAttributes(attributes);
+        group = createGroup(realm, group);
+        
+        List<GroupRepresentation> groups = groupsResource.groups("groupWithAttribute", 0, 20, true);
+        
+        assertFalse(groups.isEmpty());
+        assertTrue(groups.get(0).getAttributes().containsKey("attribute1"));
+    }
+    
+    @Test
+    public void getGroupsWithBriefRepresentation() {
+        RealmResource realm = adminClient.realms().realm("test");
+        GroupsResource groupsResource = adminClient.realms().realm("test").groups();
+        
+        GroupRepresentation group = new GroupRepresentation();
+        group.setName("groupWithAttribute");
+        
+        Map<String, List<String>> attributes = new HashMap<String, List<String>>();
+        attributes.put("attribute1", Arrays.asList("attribute1","attribute2"));
+		group.setAttributes(attributes);
+        group = createGroup(realm, group);
+        
+        List<GroupRepresentation> groups = groupsResource.groups("groupWithAttribute", 0, 20, false);
+        
+        assertFalse(groups.isEmpty());
+        assertNull(groups.get(0).getAttributes());
+    }
 
     @Test
     public void searchAndCountGroups() throws Exception {
@@ -699,13 +740,13 @@ public class GroupTest extends AbstractGroupTest {
         List<GroupRepresentation> slice = realm.groups().groups(5, 7);
         assertEquals(7, slice.size());
 
-        List<GroupRepresentation> search = realm.groups().groups("group1",0,20);
+        List<GroupRepresentation> search = realm.groups().groups("group1",0,20,false);
         assertEquals(11, search.size());
         for(GroupRepresentation group : search) {
             assertTrue(group.getName().contains("group1"));
         }
 
-        List<GroupRepresentation> noResultSearch = realm.groups().groups("abcd",0,20);
+        List<GroupRepresentation> noResultSearch = realm.groups().groups("abcd",0,20,false);
         assertEquals(0, noResultSearch.size());
 
         // Count

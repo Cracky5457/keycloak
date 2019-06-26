@@ -66,7 +66,8 @@ public interface GroupsResource {
     @Consumes(MediaType.APPLICATION_JSON)
     List<GroupRepresentation> groups(@QueryParam("search") String search,
                                      @QueryParam("first") Integer first,
-                                     @QueryParam("max") Integer max);
+                                     @QueryParam("max") Integer max,
+                                     @QueryParam("full") @DefaultValue("false") boolean fullRepresentation);
 
     /**
      * Counts all groups.
