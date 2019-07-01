@@ -72,6 +72,7 @@ public class RoleContainerResource extends RoleResource {
     private AdminEventBuilder adminEvent;
     private UriInfo uriInfo;
     private KeycloakSession session;
+    
 
     public RoleContainerResource(KeycloakSession session, UriInfo uriInfo, RealmModel realm,
                                  AdminPermissionEvaluator auth, RoleContainerModel roleContainer, AdminEventBuilder adminEvent) {
@@ -397,6 +398,11 @@ public class RoleContainerResource extends RoleResource {
         maxResults = maxResults != null ? maxResults : Constants.DEFAULT_MAX_RESULTS;
         
         RoleModel role = roleContainer.getRole(roleName);
+        
+        if (role == null) {
+            throw new NotFoundException("Could not find role");
+        }
+        
         List<UserRepresentation> results = new ArrayList<UserRepresentation>();
         List<UserModel> userModels = session.users().getRoleMembers(realm, role, firstResult, maxResults);
 
@@ -431,6 +437,11 @@ public class RoleContainerResource extends RoleResource {
         maxResults = maxResults != null ? maxResults : Constants.DEFAULT_MAX_RESULTS;
         
         RoleModel role = roleContainer.getRole(roleName);
+        
+        if (role == null) {
+            throw new NotFoundException("Could not find role");
+        }
+        
         List<GroupModel> groupsModel = session.realms().getGroupsByRole(realm, role, firstResult, maxResults);
 
         return groupsModel.stream()
