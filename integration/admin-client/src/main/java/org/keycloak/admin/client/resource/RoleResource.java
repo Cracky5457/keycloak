@@ -141,6 +141,7 @@ public interface RoleResource {
                                                @QueryParam("max") Integer maxResults,
                                                @QueryParam("composite") @DefaultValue("false") boolean composite);
     
+    
     /**
      * Get role groups
      * <p/>

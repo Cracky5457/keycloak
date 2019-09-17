@@ -795,6 +795,65 @@ module.controller('ClientRoleDetailCtrl', function($scope, realm, client, role, 
 
 });
 
+module.controller('ClientRoleMembersCtrl', function($scope, realm, client, role, ClientRoleMembership, Dialog, Notifications, $location) {
+    $scope.realm = realm;
+    $scope.page = 0;
+    $scope.role = role;
+    $scope.client = client;
+
+    $scope.query = {
+        realm: realm.realm,
+        role: role.name,
+        client: client.id,
+        max : 5,
+        first : 0,
+        composite: false
+    }
+
+    $scope.firstPage = function() {
+        $scope.query.first = 0;
+        $scope.searchQuery();
+    }
+
+    $scope.previousPage = function() {
+        $scope.query.first -= parseInt($scope.query.max);
+        if ($scope.query.first < 0) {
+            $scope.query.first = 0;
+        }
+        $scope.searchQuery();
+    }
+
+    $scope.nextPage = function() {
+        $scope.query.first += parseInt($scope.query.max);
+        $scope.searchQuery();
+    }
+
+    $scope.deepSearch = function() {
+        $scope.query.first = 0;
+
+        if($scope.query.composite == false) {
+            $scope.query.max = 5;
+        } else {
+            $scope.query.first = 0;
+            $scope.query.max = -1;
+        }
+
+        $scope.searchQuery();
+    }
+
+    $scope.searchQuery = function() {
+        $scope.searchLoaded = false;
+
+        $scope.users = ClientRoleMembership.query($scope.query, function() {
+            console.log('search loaded');
+            $scope.searchLoaded = true;
+            $scope.lastSearch = $scope.query.search;
+        });
+    };
+
+    $scope.searchQuery();
+});
+
 module.controller('ClientImportCtrl', function($scope, $location, $upload, realm, serverInfo, Notifications) {
 
     $scope.realm = realm;
@@ -1003,6 +1062,12 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, flows, $ro
         "request_uri only"
     ];
 
+    $scope.changePkceCodeChallengeMethodOptions = [
+        "S256",
+        "plain",
+        ""
+    ];
+
     $scope.realm = realm;
     $scope.samlAuthnStatement = false;
     $scope.samlOneTimeUseCondition = false;
@@ -1157,6 +1222,8 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, flows, $ro
 
         $scope.accessTokenSignedResponseAlg = $scope.client.attributes['access.token.signed.response.alg'];
         $scope.idTokenSignedResponseAlg = $scope.client.attributes['id.token.signed.response.alg'];
+        $scope.idTokenEncryptedResponseAlg = $scope.client.attributes['id.token.encrypted.response.alg'];
+        $scope.idTokenEncryptedResponseEnc = $scope.client.attributes['id.token.encrypted.response.enc'];
 
         var attrVal1 = $scope.client.attributes['user.info.response.signature.alg'];
         $scope.userInfoSignedResponseAlg = attrVal1==null ? 'unsigned' : attrVal1;
@@ -1166,6 +1233,9 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, flows, $ro
 
         var attrVal3 = $scope.client.attributes['request.object.required'];
         $scope.requestObjectRequired = attrVal3==null ? 'not required' : attrVal3;
+
+        var attrVal4 = $scope.client.attributes['pkce.code.challenge.method'];
+        $scope.pkceCodeChallengeMethod = attrVal4==null ? 'none' : attrVal4;
 
         if ($scope.client.attributes["exclude.session.state.from.auth.response"]) {
             if ($scope.client.attributes["exclude.session.state.from.auth.response"] == "true") {
@@ -1276,6 +1346,14 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, flows, $ro
         $scope.clientEdit.attributes['id.token.signed.response.alg'] = $scope.idTokenSignedResponseAlg;
     };
 
+    $scope.changeIdTokenEncryptedResponseAlg = function() {
+        $scope.clientEdit.attributes['id.token.encrypted.response.alg'] = $scope.idTokenEncryptedResponseAlg;
+    };
+
+    $scope.changeIdTokenEncryptedResponseEnc = function() {
+        $scope.clientEdit.attributes['id.token.encrypted.response.enc'] = $scope.idTokenEncryptedResponseEnc;
+    };
+
     $scope.changeUserInfoSignedResponseAlg = function() {
         if ($scope.userInfoSignedResponseAlg === 'unsigned') {
             $scope.clientEdit.attributes['user.info.response.signature.alg'] = null;
@@ -1291,13 +1369,17 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, flows, $ro
             $scope.clientEdit.attributes['request.object.signature.alg'] = $scope.requestObjectSignatureAlg;
         }
     };
-    
+
     $scope.changeRequestObjectRequired = function() {
         if ($scope.requestObjectRequired === 'not required') {
             $scope.clientEdit.attributes['request.object.required'] = null;
         } else {
             $scope.clientEdit.attributes['request.object.required'] = $scope.requestObjectRequired;
         }
+    };
+
+    $scope.changePkceCodeChallengeMethod = function() {
+        $scope.clientEdit.attributes['pkce.code.challenge.method'] = $scope.pkceCodeChallengeMethod;
     };
 
     $scope.$watch(function() {
