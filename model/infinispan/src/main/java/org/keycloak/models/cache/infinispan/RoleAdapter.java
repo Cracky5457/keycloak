@@ -273,5 +273,4 @@ public class RoleAdapter implements RoleModel {
     public int hashCode() {
         return getId().hashCode();
     }
-
 }
