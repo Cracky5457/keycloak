@@ -25,6 +25,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -126,7 +127,8 @@ public interface RoleResource {
     @Path("users")
     @Produces(MediaType.APPLICATION_JSON)
     Set<UserRepresentation> getRoleUserMembers(@QueryParam("first") Integer firstResult,
-                                               @QueryParam("max") Integer maxResults);
+                                               @QueryParam("max") Integer maxResults,
+                                               @QueryParam("composite") @DefaultValue("false") boolean composite);
     
     /**
      * Get role groups
