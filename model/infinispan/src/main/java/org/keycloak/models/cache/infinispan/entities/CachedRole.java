@@ -17,15 +17,15 @@
 
 package org.keycloak.models.cache.infinispan.entities;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Supplier;
+
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.cache.infinispan.DefaultLazyLoader;
 import org.keycloak.models.cache.infinispan.LazyLoader;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -33,48 +33,59 @@ import java.util.function.Supplier;
  */
 public class CachedRole extends AbstractRevisioned implements InRealm {
 
-    final protected String name;
-    final protected String realm;
-    final protected String description;
-    final protected boolean composite;
-    final protected Set<String> composites = new HashSet<String>();
-    private final LazyLoader<RoleModel, MultivaluedHashMap<String, String>> attributes;
+	final protected String name;
+	final protected String realm;
+	final protected String description;
+	final protected boolean composite;
+	final protected Set<String> composites = new HashSet<String>();
+	final protected Set<String> parents = new HashSet<String>();
+	private final LazyLoader<RoleModel, MultivaluedHashMap<String, String>> attributes;
 
-    public CachedRole(Long revision, RoleModel model, RealmModel realm) {
-        super(revision, model.getId());
-        composite = model.isComposite();
-        description = model.getDescription();
-        name = model.getName();
-        this.realm = realm.getId();
-        if (composite) {
-            for (RoleModel child : model.getComposites()) {
-                composites.add(child.getId());
-            }
-        }
-        attributes = new DefaultLazyLoader<>(roleModel -> new MultivaluedHashMap<>(roleModel.getAttributes()), MultivaluedHashMap::new);
-    }
+	public CachedRole(Long revision, RoleModel model, RealmModel realm) {
+		super(revision, model.getId());
+		composite = model.isComposite();
+		description = model.getDescription();
+		name = model.getName();
+		this.realm = realm.getId();
+		if (composite) {
+			for (RoleModel child : model.getComposites()) {
+				composites.add(child.getId());
+			}
+		}
 
-    public String getName() {
-        return name;
-    }
+		for (RoleModel child : model.getParents()) {
+			parents.add(child.getId());
+		}
 
-    public String getRealm() {
-        return realm;
-    }
+		attributes = new DefaultLazyLoader<>(roleModel -> new MultivaluedHashMap<>(roleModel.getAttributes()),
+				MultivaluedHashMap::new);
+	}
 
-    public String getDescription() {
-        return description;
-    }
+	public String getName() {
+		return name;
+	}
 
-    public boolean isComposite() {
-        return composite;
-    }
+	public String getRealm() {
+		return realm;
+	}
 
-    public Set<String> getComposites() {
-        return composites;
-    }
+	public String getDescription() {
+		return description;
+	}
 
-    public MultivaluedHashMap<String, String> getAttributes(Supplier<RoleModel> roleModel) {
-        return attributes.get(roleModel);
-    }
+	public boolean isComposite() {
+		return composite;
+	}
+
+	public Set<String> getComposites() {
+		return composites;
+	}
+
+	public Set<String> getParents() {
+		return parents;
+	}
+
+	public MultivaluedHashMap<String, String> getAttributes(Supplier<RoleModel> roleModel) {
+		return attributes.get(roleModel);
+	}
 }

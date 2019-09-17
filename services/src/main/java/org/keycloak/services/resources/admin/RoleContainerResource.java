@@ -17,6 +17,28 @@
 
 package org.keycloak.services.resources.admin;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.NotFoundException;
 import org.keycloak.events.admin.OperationType;
@@ -39,25 +61,6 @@ import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionManagement;
 import org.keycloak.services.resources.admin.permissions.AdminPermissions;
-
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @resource Roles
@@ -388,29 +391,36 @@ public class RoleContainerResource extends RoleResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @NoCache
-    public  List<UserRepresentation> getUsersInRole(final @PathParam("role-name") String roleName, 
-                                                    @QueryParam("first") Integer firstResult,
-                                                    @QueryParam("max") Integer maxResults) {
-        
-        auth.roles().requireView(roleContainer);
-        firstResult = firstResult != null ? firstResult : 0;
-        maxResults = maxResults != null ? maxResults : Constants.DEFAULT_MAX_RESULTS;
-        
-        RoleModel role = roleContainer.getRole(roleName);
-        
-        if (role == null) {
-            throw new NotFoundException("Could not find role");
-        }
-        
-        List<UserRepresentation> results = new ArrayList<UserRepresentation>();
-        List<UserModel> userModels = session.users().getRoleMembers(realm, role, firstResult, maxResults);
+	public List<UserRepresentation> getUsersInRole(final @PathParam("role-name") String roleName,
+			@QueryParam("first") Integer firstResult, @QueryParam("max") Integer maxResults,
+			@QueryParam("composite") @DefaultValue("false") boolean composite) {
+		
+		auth.roles().requireView(roleContainer);
+		firstResult = firstResult != null ? firstResult : 0;
+		maxResults = maxResults != null ? maxResults : Constants.DEFAULT_MAX_RESULTS;
 
-        for (UserModel user : userModels) {
-            results.add(ModelToRepresentation.toRepresentation(session, realm, user));
-        }
-        return results; 
-        
-    }    
+		RoleModel role = roleContainer.getRole(roleName);
+
+		if (role == null) {
+			throw new NotFoundException("Could not find role");
+		}
+
+		List<UserRepresentation> results = new ArrayList<UserRepresentation>();
+		Set<UserModel> userModels = new HashSet<UserModel>();
+
+		if (!composite) {
+			userModels = new HashSet<UserModel>(session.users().getRoleMembers(realm, role, firstResult, maxResults));
+		} else {
+			getAllUsersInRole(role, new HashSet<String>(), new HashSet<String>(), userModels);
+		}
+
+		for (UserModel user : userModels) {
+			results.add(ModelToRepresentation.toRepresentation(session, realm, user));
+		}
+
+		return results;
+
+	}
     
     /**
      * Return List of Groups that have the specified role name 
@@ -447,4 +457,52 @@ public class RoleContainerResource extends RoleResource {
         		.map(g -> ModelToRepresentation.toRepresentation(g, fullRepresentation))
         		.collect(Collectors.toList());
     }   
+    
+	protected void getAllUsersInRoleFromGroup(RoleModel role, GroupModel group, Set<String> visitedRoles,
+			Set<String> visitedGroups, Set<UserModel> users) {
+		
+		if (!visitedGroups.contains(group.getId())) {
+			List<UserModel> usersInGroup = session.users().getGroupMembers(realm, group);
+		
+			users.addAll(usersInGroup);
+
+			// We define our current group as already visited
+			visitedGroups.add(group.getId());
+			
+			Set<GroupModel> subGroups = group.getSubGroups();
+
+			for(GroupModel subGroup : subGroups) {
+				getAllUsersInRoleFromGroup(role, subGroup, visitedRoles, visitedGroups, users);
+			}
+		}
+	}
+
+	protected void getAllUsersInRole(RoleModel role, Set<String> visitedRoles, Set<String> visitedGroups,
+			Set<UserModel> users) {
+		
+		if (!visitedRoles.contains(role.getId())) {
+			// We found the users directly assign to this role and we add them to our set of
+			// users
+			Set<UserModel> usersForCurrentRole = new HashSet<UserModel>(
+					session.users().getRoleMembers(realm, role));
+			
+			users.addAll(usersForCurrentRole);
+
+			// We define our current role as already visited
+			visitedRoles.add(role.getId());
+
+			Set<RoleModel> compositesRole = role.getParents();
+			
+			for (RoleModel compositeRole : compositesRole) {
+				getAllUsersInRole(compositeRole, visitedRoles, visitedGroups, users);
+			}
+
+			// We looks for groups directly assign to the role
+			List<GroupModel> groups = session.realms().getGroupsByRole(realm, role, -1, -1);
+
+			for (GroupModel group : groups) {
+				getAllUsersInRoleFromGroup(role, group, visitedRoles, visitedGroups, users);
+			}
+		}
+	}
 }

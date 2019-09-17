@@ -44,6 +44,7 @@ public class RoleAdapter implements RoleModel {
     protected RealmCacheSession cacheSession;
     protected RealmModel realm;
     protected Set<RoleModel> composites;
+    protected Set<RoleModel> parents;
     private final Supplier<RoleModel> modelSupplier;
 
     public RoleAdapter(CachedRole cached, RealmCacheSession session, RealmModel realm) {
@@ -141,6 +142,30 @@ public class RoleAdapter implements RoleModel {
 
         return composites;
     }
+    
+	@Override
+	public void addParentRole(RoleModel role) {
+        getDelegateForUpdate();
+        updated.addParentRole(role);
+	}
+    
+	@Override
+	public Set<RoleModel> getParents() {
+        if (isUpdated()) return updated.getParents();
+
+        if (parents == null) {
+        	parents = new HashSet<RoleModel>();
+            for (String id : cached.getParents()) {
+                RoleModel role = realm.getRoleById(id);
+                if (role == null) {
+                    throw new IllegalStateException("Could not find parents in role " + getName() + ": " + id);
+                }
+                parents.add(role);
+            }
+        }
+
+        return parents;
+	}
 
     @Override
     public boolean isClientRole() {
@@ -239,5 +264,4 @@ public class RoleAdapter implements RoleModel {
     public int hashCode() {
         return getId().hashCode();
     }
-
 }

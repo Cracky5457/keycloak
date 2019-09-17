@@ -17,6 +17,14 @@
 
 package org.keycloak.services.resources.admin;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.ws.rs.core.UriInfo;
+
 import org.jboss.resteasy.spi.NotFoundException;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
@@ -26,13 +34,6 @@ import org.keycloak.models.RoleModel;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
-
-import javax.ws.rs.core.UriInfo;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * @resource Roles
@@ -81,6 +82,7 @@ public abstract class RoleResource {
                 throw new NotFoundException("Could not find composite role");
             }
             auth.roles().requireMapComposite(composite);
+            composite.addParentRole(role);
             role.addCompositeRole(composite);
         }
 
