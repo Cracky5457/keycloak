@@ -17,28 +17,6 @@
 
 package org.keycloak.services.resources.admin;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.NotFoundException;
 import org.keycloak.events.admin.OperationType;
@@ -61,6 +39,27 @@ import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionManagement;
 import org.keycloak.services.resources.admin.permissions.AdminPermissions;
+
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @resource Roles
@@ -96,13 +95,29 @@ public class RoleContainerResource extends RoleResource {
     @GET
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
-    public List<RoleRepresentation> getRoles() {
+    public List<RoleRepresentation> getRoles(@QueryParam("search") @DefaultValue("") String search,
+                                             @QueryParam("first") Integer firstResult,
+                                             @QueryParam("max") Integer maxResults,
+                                             @QueryParam("full") @DefaultValue("false") boolean fullRepresentation) {
         auth.roles().requireList(roleContainer);
 
-        Set<RoleModel> roleModels = roleContainer.getRoles();
+        Set<RoleModel> roleModels = new HashSet<RoleModel>();
+
+        if(search != null && search.trim().length() > 0) {
+            roleModels = roleContainer.searchForRoles(search, firstResult, maxResults);
+        } else if (!Objects.isNull(firstResult) && !Objects.isNull(maxResults)) {
+            roleModels = roleContainer.getRoles(firstResult, maxResults);
+        } else {
+            roleModels = roleContainer.getRoles();
+        }
+
         List<RoleRepresentation> roles = new ArrayList<RoleRepresentation>();
         for (RoleModel roleModel : roleModels) {
-            roles.add(ModelToRepresentation.toBriefRepresentation(roleModel));
+            if(fullRepresentation) {
+                roles.add(ModelToRepresentation.toRepresentation(roleModel));  
+            } else {
+                roles.add(ModelToRepresentation.toBriefRepresentation(roleModel));               
+            }
         }
         return roles;
     }
