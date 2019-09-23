@@ -121,6 +121,16 @@ public class PlainTextVaultProviderFactoryTest {
         public Set<RoleModel> getRoles() {
             return null;
         }
+        
+        @Override
+        public Set<RoleModel> getRoles(Integer firstResult, Integer maxResults) {
+            return null;
+        }
+
+        @Override
+        public Set<RoleModel> searchForRoles(String search, Integer first, Integer max) {
+            return null;
+        }
 
         @Override
         public List<String> getDefaultRoles() {

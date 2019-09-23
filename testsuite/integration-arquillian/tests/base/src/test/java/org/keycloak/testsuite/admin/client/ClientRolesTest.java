@@ -180,4 +180,77 @@ public class ClientRolesTest extends AbstractClientTest {
             assertTrue((result1.isPresent() || result2.isPresent()) && !(result1.isPresent() && result2.isPresent()));
         }
     }
+    
+    @Test
+    public void testSearchForRoles() {
+        
+        for(int i = 0; i<15; i++) {
+            String roleName = "role"+i;
+            RoleRepresentation role = makeRole(roleName);
+            rolesRsc.create(role);
+            assertAdminEvents.assertEvent(getRealmId(), OperationType.CREATE, AdminEventPaths.clientRoleResourcePath(clientDbId,roleName), role, ResourceType.CLIENT_ROLE);           
+        }  
+        
+        String roleNameA = "abcdef";
+        RoleRepresentation roleA = makeRole(roleNameA);
+        rolesRsc.create(roleA);
+        assertAdminEvents.assertEvent(getRealmId(), OperationType.CREATE, AdminEventPaths.clientRoleResourcePath(clientDbId,roleNameA), roleA, ResourceType.CLIENT_ROLE);  
+        
+        String roleNameB = "defghi";
+        RoleRepresentation roleB = makeRole(roleNameB);
+        rolesRsc.create(roleB);
+        assertAdminEvents.assertEvent(getRealmId(), OperationType.CREATE, AdminEventPaths.clientRoleResourcePath(clientDbId,roleNameB), roleB, ResourceType.CLIENT_ROLE);
+        
+        List<RoleRepresentation> resultSearch = rolesRsc.list("def", -1, -1);
+        assertEquals(2,resultSearch.size());
+        
+        List<RoleRepresentation> resultSearch2 = rolesRsc.list("role", -1, -1);
+        assertEquals(15,resultSearch2.size());
+        
+        List<RoleRepresentation> resultSearchPagination = rolesRsc.list("role", 1, 5);
+        assertEquals(5,resultSearchPagination.size());
+    }
+    
+    @Test
+    public void testPaginationRoles() {
+        
+        for(int i = 0; i<15; i++) {
+            String roleName = "role"+i;
+            RoleRepresentation role = makeRole(roleName);
+            rolesRsc.create(role);
+            assertAdminEvents.assertEvent(getRealmId(), OperationType.CREATE, AdminEventPaths.clientRoleResourcePath(clientDbId,roleName), role, ResourceType.CLIENT_ROLE);           
+        }  
+        
+        List<RoleRepresentation> resultSearchWithoutPagination = rolesRsc.list();
+        assertEquals(15,resultSearchWithoutPagination.size());
+        
+        List<RoleRepresentation> resultSearchPagination = rolesRsc.list(1, 5);
+        assertEquals(5,resultSearchPagination.size());
+        
+        List<RoleRepresentation> resultSearchPaginationIncoherentParams = rolesRsc.list(1, null);
+        assertTrue(resultSearchPaginationIncoherentParams.size() >= 15);
+    }
+    
+    @Test
+    public void testPaginationRolesCache() {
+        
+        for(int i = 0; i<5; i++) {
+            String roleName = "paginaterole"+i;
+            RoleRepresentation role = makeRole(roleName);
+            rolesRsc.create(role);
+            assertAdminEvents.assertEvent(getRealmId(), OperationType.CREATE, AdminEventPaths.clientRoleResourcePath(clientDbId,roleName), role, ResourceType.CLIENT_ROLE);        
+        }   
+       
+        List<RoleRepresentation> resultBeforeAddingRoleToTestCache = rolesRsc.list(1, 1000);  
+        
+        // after a first call which init the cache, we add a new role to see if the result change
+        
+        RoleRepresentation role = makeRole("anewrole");
+        rolesRsc.create(role);
+        assertAdminEvents.assertEvent(getRealmId(), OperationType.CREATE, AdminEventPaths.clientRoleResourcePath(clientDbId,"anewrole"), role, ResourceType.CLIENT_ROLE);  
+        
+        List<RoleRepresentation> resultafterAddingRoleToTestCache = rolesRsc.list(1, 1000);
+        
+        assertEquals(resultBeforeAddingRoleToTestCache.size()+1, resultafterAddingRoleToTestCache.size());
+    }
 }

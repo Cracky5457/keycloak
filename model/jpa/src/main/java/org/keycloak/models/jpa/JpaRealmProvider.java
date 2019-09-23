@@ -291,7 +291,65 @@ public class JpaRealmProvider implements RealmProvider {
             list.add(session.realms().getRoleById(id, realm));
         }
         return list;
+    }
+    
+    @Override
+    public Set<RoleModel> getRealmRoles(RealmModel realm, Integer first, Integer max) {
+        TypedQuery<RoleEntity> query = em.createNamedQuery("getRealmRoles", RoleEntity.class);
+        query.setParameter("realm", realm.getId());
+        
+        return getRoles(query, realm, first, max);
+    }
 
+    @Override
+    public Set<RoleModel> getClientRoles(RealmModel realm, ClientModel client, Integer first, Integer max) {
+        TypedQuery<RoleEntity> query = em.createNamedQuery("getClientRoles", RoleEntity.class);
+        query.setParameter("client", client.getId());
+        
+        return getRoles(query, realm, first, max);
+    }
+    
+    protected Set<RoleModel> getRoles(TypedQuery<RoleEntity> query, RealmModel realm, Integer first, Integer max) {
+        query.setFirstResult(first);
+        query.setMaxResults(max);
+
+        List<RoleEntity> results = query.getResultList();
+        
+        return results.stream()
+                .map(role -> new RoleAdapter(session, realm, em, role))
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toSet(), Collections::unmodifiableSet));
+    }
+    
+    @Override
+    public Set<RoleModel> searchForClientRoles(RealmModel realm, ClientModel client, String search, Integer first, Integer max) {
+        TypedQuery<RoleEntity> query = em.createNamedQuery("searchForClientRoles", RoleEntity.class);
+        query.setParameter("client", client.getId());
+        return searchForRoles(query, realm, search, first, max);
+    }
+    
+    @Override
+    public Set<RoleModel> searchForRoles(RealmModel realm, String search, Integer first, Integer max) {
+        TypedQuery<RoleEntity> query = em.createNamedQuery("searchForRealmRoles", RoleEntity.class);
+        query.setParameter("realm", realm.getId());
+        
+        return searchForRoles(query, realm, search, first, max);
+    }
+    
+    protected Set<RoleModel> searchForRoles(TypedQuery<RoleEntity> query, RealmModel realm, String search, Integer first, Integer max) {
+
+        query.setParameter("search", "%" + search.trim().toLowerCase() + "%");
+        if(Objects.nonNull(first) && Objects.nonNull(max)
+                && first != -1 && max != -1) {
+            query= query.setFirstResult(first).setMaxResults(max);
+        }
+        
+        List<RoleEntity> results = query.getResultList();
+        
+        return results.stream()
+                .map(role -> new RoleAdapter(session, realm, em, role))
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toSet(), Collections::unmodifiableSet));
     }
 
     @Override
@@ -735,4 +793,5 @@ public class JpaRealmProvider implements RealmProvider {
         model.setTimestamp(entity.getTimestamp());
         return model;
     }
+
 }
