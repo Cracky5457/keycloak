@@ -820,9 +820,6 @@ module.config([ '$routeProvider', function($routeProvider) {
             resolve : {
                 realm : function(RealmLoader) {
                     return RealmLoader();
-                },
-                roles : function(RoleListLoader) {
-                    return RoleListLoader();
                 }
             },
             controller : 'RoleListCtrl'
