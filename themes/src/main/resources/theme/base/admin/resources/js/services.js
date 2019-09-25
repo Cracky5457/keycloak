@@ -1919,6 +1919,13 @@ module.factory('RoleMembership', function($resource) {
     });
 });
 
+module.factory('ClientRoleList', function($resource) {
+    return $resource(authUrl + '/admin/realms/:realm/clients/:client/roles', {
+        realm : '@realm',
+        client : '@client'
+    });
+});
+
 module.factory('ClientRoleMembership', function($resource) {
     return $resource(authUrl + '/admin/realms/:realm/clients/:client/roles/:role/users', {
         realm : '@realm',

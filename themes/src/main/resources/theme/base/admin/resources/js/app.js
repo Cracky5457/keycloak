@@ -1355,9 +1355,6 @@ module.config([ '$routeProvider', function($routeProvider) {
                 },
                 client : function(ClientLoader) {
                     return ClientLoader();
-                },
-                roles : function(ClientRoleListLoader) {
-                    return ClientRoleListLoader();
                 }
             },
             controller : 'ClientRoleListCtrl'
