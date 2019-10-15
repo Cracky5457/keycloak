@@ -238,7 +238,12 @@ public class RealmCacheSession implements CacheRealmProvider {
     private void invalidateRole(String id) {
         invalidations.add(id);
         RoleAdapter adapter = managedRoles.get(id);
-        if (adapter != null) adapter.invalidate();
+        
+        if (adapter != null) {
+            adapter.invalidate();
+            adapter.invalidateComposites();
+        }
+        
     }
 
     private void addedRole(String roleId, String roleContainerId) {

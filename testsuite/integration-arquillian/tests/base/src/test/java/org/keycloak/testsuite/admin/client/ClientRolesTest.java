@@ -374,6 +374,37 @@ public class ClientRolesTest extends AbstractClientTest {
     }
 
     @Test
+    public void testGetParentsAfterDeletetionOfAParentRole() {
+        String roleAName = "role-direct";
+        RoleRepresentation roleA = makeRole(roleAName);
+        rolesRsc.create(roleA);
+        assertAdminEvents.assertEvent(getRealmId(), OperationType.CREATE,
+                AdminEventPaths.clientRoleResourcePath(clientDbId, roleAName), roleA, ResourceType.CLIENT_ROLE); 
+        
+        String roleBName = "role-indrect";
+        RoleRepresentation roleB = makeRole(roleBName);
+        rolesRsc.create(roleB);
+        assertAdminEvents.assertEvent(getRealmId(), OperationType.CREATE,
+                AdminEventPaths.clientRoleResourcePath(clientDbId, roleBName), roleB, ResourceType.CLIENT_ROLE);
+        
+        // We define B with direct A as composite role
+        List<RoleRepresentation> l = new LinkedList<>();
+        l.add(rolesRsc.get(roleAName).toRepresentation());
+        rolesRsc.get(roleBName).addComposites(l);
+        assertAdminEvents.assertEvent(getRealmId(), OperationType.CREATE,
+                AdminEventPaths.clientRoleResourceCompositesPath(clientDbId, roleBName), l, ResourceType.CLIENT_ROLE);
+        
+        Set<RoleRepresentation> parentsOfAAfterCache = rolesRsc.get(roleAName).getParentsRoles();
+        assertEquals(1, parentsOfAAfterCache.size());
+        Assert.assertNames(parentsOfAAfterCache, roleBName);
+        
+        rolesRsc.get(roleBName).remove();
+        
+        Set<RoleRepresentation> parentsOfAAfterRemoveCache = rolesRsc.get(roleAName).getParentsRoles();
+        assertEquals(0, parentsOfAAfterRemoveCache.size());
+    }
+
+    @Test
     public void usersInCompositeRole() {
         String clientID = clientRsc.toRepresentation().getId();
         
