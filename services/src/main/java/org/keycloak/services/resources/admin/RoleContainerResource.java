@@ -273,6 +273,28 @@ public class RoleContainerResource extends RoleResource {
         }
         return getRoleComposites(role);
     }
+    
+    /**
+     * Get parents of the roles, thoses which have the given role as composite
+     *
+     * @param roleName role's name (not id!)
+     * @param fullRepresentation if true, return a full representation of the roles with their attributes
+     * @return parents of the roles
+     */
+    @Path("{role-name}/parents")
+    @GET
+    @NoCache
+    @Produces(MediaType.APPLICATION_JSON)
+    public Set<RoleRepresentation> getParentsRoles(final @PathParam("role-name") String roleName,
+                                                   final @QueryParam("full") @DefaultValue("false") boolean fullRepresentation) {
+        auth.roles().requireView(roleContainer);
+        RoleModel role = roleContainer.getRole(roleName);
+        if (role == null) {
+            throw new NotFoundException("Could not find role");
+        }
+        
+        return getParentsRoles(role, fullRepresentation);
+    }
 
     /**
      * Get realm-level roles of the role's composite

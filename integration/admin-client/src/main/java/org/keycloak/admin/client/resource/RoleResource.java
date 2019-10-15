@@ -17,6 +17,7 @@
 
 package org.keycloak.admin.client.resource;
 
+import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.ManagementPermissionReference;
 import org.keycloak.representations.idm.ManagementPermissionRepresentation;
@@ -91,6 +92,16 @@ public interface RoleResource {
     @Path("composites/clients/{appName}")
     @Produces(MediaType.APPLICATION_JSON)
     Set<RoleRepresentation> getClientRoleComposites(@PathParam("appName") String appName);
+    
+    @GET
+    @Path("parents")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Set<RoleRepresentation> getParentsRoles();
+    
+    @GET
+    @Path("parents")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Set<RoleRepresentation> getParentsRoles(@QueryParam("full") @DefaultValue("false") boolean fullRepresentation);
 
     @POST
     @Path("composites")

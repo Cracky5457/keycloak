@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @resource Roles
@@ -142,5 +143,17 @@ public abstract class RoleResource {
         }
 
         adminEvent.operation(OperationType.DELETE).resourcePath(uriInfo).representation(roles).success();
+    }
+    
+    protected Set<RoleRepresentation> getParentsRoles(RoleModel role, boolean fullRepresentation) {
+        if (role.getParents().size() == 0) return Collections.emptySet();
+
+        Set<RoleModel> parentsRoles = role.getParents();
+        
+        if(fullRepresentation) {
+            return parentsRoles.stream().map(r-> ModelToRepresentation.toRepresentation(r)).collect(Collectors.toSet());
+        }
+        
+        return parentsRoles.stream().map(r-> ModelToRepresentation.toBriefRepresentation(r)).collect(Collectors.toSet());
     }
 }
