@@ -53,8 +53,8 @@ public class CachedRole extends AbstractRevisioned implements InRealm {
             }
         }
         
-        for (RoleModel child : model.getParents()) {
-            parents.add(child.getId());
+        for (RoleModel parent : model.getParents()) {
+            parents.add(parent.getId());
         }
         
         attributes = new DefaultLazyLoader<>(roleModel -> new MultivaluedHashMap<>(roleModel.getAttributes()), MultivaluedHashMap::new);
