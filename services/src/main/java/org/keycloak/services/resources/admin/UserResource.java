@@ -78,6 +78,7 @@ import org.keycloak.utils.ProfileHelper;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -755,16 +756,17 @@ public class UserResource {
     @Produces(MediaType.APPLICATION_JSON)
     public List<GroupRepresentation> groupMembership(@QueryParam("search") String search,
                                                      @QueryParam("first") Integer firstResult,
-                                                     @QueryParam("max") Integer maxResults) {
+                                                     @QueryParam("max") Integer maxResults,
+                                                     @QueryParam("full") @DefaultValue("false") boolean fullRepresentation) {
         auth.users().requireView(user);
         List<GroupRepresentation> results;
 
         if (Objects.nonNull(search) && Objects.nonNull(firstResult) && Objects.nonNull(maxResults)) {
-            results = ModelToRepresentation.searchForGroupByName(user, false, search.trim(), firstResult, maxResults);
+            results = ModelToRepresentation.searchForGroupByName(user, fullRepresentation, search.trim(), firstResult, maxResults);
         } else if(Objects.nonNull(firstResult) && Objects.nonNull(maxResults)) {
-            results = ModelToRepresentation.toGroupHierarchy(user, false, firstResult, maxResults);
+            results = ModelToRepresentation.toGroupHierarchy(user, fullRepresentation, firstResult, maxResults);
         } else {
-            results = ModelToRepresentation.toGroupHierarchy(user, false);
+            results = ModelToRepresentation.toGroupHierarchy(user, fullRepresentation);
         }
 
         return results;
